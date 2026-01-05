@@ -15,7 +15,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories =  Category::all();
-       return ResponseHelper::success(' جميع الأصناف',$categories);
+        return ResponseHelper::success(' جميع الأصناف', $categories);
     }
 
     /**
@@ -29,10 +29,10 @@ class CategoryController extends Controller
         $category = new Category();
         $category->name = $request->name;
         $category->save();
-        return ResponseHelper::success("تمت إضافة الصنف" , $category);
+        return ResponseHelper::success("تمت إضافة الصنف", $category);
     }
 
-    
+
 
     /**
      * Update the specified resource in storage.
@@ -46,10 +46,10 @@ class CategoryController extends Controller
         $category = Category::find($id);
         $category->name = $request->name;
         $category->save();
-        return ResponseHelper::success("تم تعديل الصنف" , $category);
-
+        return ResponseHelper::success("تم تعديل الصنف", $category);
     }
 
+    
     /**
      * Remove the specified resource from storage.
      */
@@ -57,6 +57,6 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
         $category->delete();
-        return ResponseHelper::success("تم حذف الصنف" , $category);
+        return ResponseHelper::success("تم حذف الصنف", $category);
     }
 }
