@@ -53,7 +53,6 @@ class AuthorController extends Controller
         $author->save();
         return ResponseHelper::success("تم تعديل اسم المؤلف", $author);
     }
-
     /**
      * Remove the specified resource from storage.
      */

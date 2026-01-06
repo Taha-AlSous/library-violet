@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\ResponseHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class CategoryController extends Controller
 {
@@ -40,12 +42,19 @@ class CategoryController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'name' => "required|max:50|unique:categories,name,$id"
+            'name' => "required|max:50|unique:categories,name,$id",
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
         $category = Category::find($id);
         $category->name = $request->name;
         $category->save();
+        if ($request->hasFile('image')){
+            $file = $request->file('image');
+            $filename = "$request->name." . $file->extension();
+            Storage::putFileAs('book-images', $file ,$filename );
+            $category->cover = $filename;
+            $category->save();
+        }
         return ResponseHelper::success("تم تعديل الصنف", $category);
     }
 
