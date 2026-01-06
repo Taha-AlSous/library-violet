@@ -27,8 +27,10 @@ class BookController extends Controller
     public function store(StoreBookRequest $request)
     {
         //  return $request->all();
-        $book = Book::create($request->all());
+        // $data = $request->validated(); 
 
+        
+        $book = Book::create($request->all());
         if ($request->hasFile('cover')){
             $file = $request->file('cover');
             $filename = "$request->ISBN." . $file->extension();
