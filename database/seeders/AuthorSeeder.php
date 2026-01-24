@@ -13,13 +13,6 @@ class AuthorSeeder extends Seeder
      */
     public function run(): void
     {
-        $authors = [
-            ['name' => 'أحمد'],
-            ['name' => 'سعيد'],
-            ['name' => 'محمد'],
-            ['name' => 'فارس'],
-            ['name' => 'هدى'],
-        ];
-        Author::insert($authors);
+        Author::factory(10)->create();
     }
 }
