@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\ِAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\WaitingListController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -19,6 +20,9 @@ Route::patch('changePassword', [ِAuthController::class, 'changePassword']);
 Route::get('categories', [CategoryController::class, 'index']);
 Route::apiResource('books', BookController::class)->only('index', 'show');
 Route::apiResource('authors', AuthorController::class)->only('index');
+
+
+Route::post('/waiting-list', [WaitingListController::class, 'store'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [ِAuthController::class, 'logout']);
