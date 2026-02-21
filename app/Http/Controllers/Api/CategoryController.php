@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\ResponseHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
@@ -15,12 +14,9 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        // $categories =  Category::all();
-        // $categories =  Category::withAvg('books' , 'price')->get();
         $categories =  Category::withCount('books')->get();
-                
-    //    return ResponseHelper::success(trans('library.all-categories'),$categories);
-       return ResponseHelper::success(__('library.all-categories'),$categories);
+
+        return apiSuccess(__('library.all-categories'), $categories);
     }
 
     /**
@@ -29,12 +25,13 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|max:50|unique:categories'
+            'name' => 'required|max:50|unique:categories',
         ]);
         $category = new Category();
         $category->name = $request->name;
         $category->save();
-        return ResponseHelper::success("تمت إضافة الصنف", $category);
+
+        return apiSuccess("تمت إضافة الصنف", $category);
     }
 
 
@@ -48,17 +45,12 @@ class CategoryController extends Controller
             'name' => "required|max:50|unique:categories,name,$id",
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-        $category = Category::find($id);
+
+        $category = Category::findorfail($id);
         $category->name = $request->name;
+        
         $category->save();
-        if ($request->hasFile('image')){
-            $file = $request->file('image');
-            $filename = "$request->name." . $file->extension();
-            Storage::putFileAs('book-images', $file ,$filename );
-            $category->cover = $filename;
-            $category->save();
-        }
-        return ResponseHelper::success("تم تعديل الصنف", $category);
+        return apiSuccess("تم تعديل الصنف", $category);
     }
 
     
@@ -66,9 +58,16 @@ class CategoryController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
-    {
-        $category = Category::find($id);
+    {        
+        $category = Category::findorfail($id);
+        
+        // التحقق من وجود كتب مرتبطة بالصنف
+        $booksCount = $category->books()->count();
+        if ($booksCount > 0) {
+            return apiError("لا يمكن حذف الصنف لوجود $booksCount كتاب مرتبط به");
+        }        
+
         $category->delete();
-        return ResponseHelper::success("تم حذف الصنف", $category);
+        return apiSuccess("تم حذف الصنف");
     }
 }

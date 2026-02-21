@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BookRequest;
+use App\Http\Resources\BookCollection;
 use App\Models\Book;
-use App\Http\Requests\StoreBookRequest;
-use App\Http\Requests\UpdateBookRequest;
 use App\Http\Resources\BookResource;
-use App\ResponseHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,56 +19,41 @@ class BookController extends Controller
     public function index(Request $request)
     {
 
-        // $book = Book::all();
+        $filters = $request->only(['title', 'category_name', 'author_name']);
 
-        /** using map to return custom fields */
-        // $books = Book::select("ISBN" ,"title" ,  "price" ,"mortgage" ,"cover")
-        // ->get()
-        // ->map(function($book){
-        //     return [
-        //         "ISBN" => $book->ISBN ,
-        //         "title" => $book->title ,
-        //         "price" => $book->price ,
-        //         "mortgage" => $book->mortgage ,
-        //         "cover" =>  asset('storage/book-images/' . ($book->cover ?? 'no-image.jpeg')) ,
-        //     ];
-        // });
-        // return ResponseHelper::success(' جميع الكتب', $books);
 
-        // if ($title){}, we use when() method instead of if condition
-        
-        // $title = $request->has('title');        
-        $title = $request->title;
-        $books = Book::select("id" ,"ISBN" ,"title" ,  "price" ,"mortgage" ,"cover" , "category_id")
-        ->when($title , function($q ) use ($title) {
-            return $q->where('title' , 'like' , "%$title%");
-        })
-        ->with(['authors', 'category'])
-        ->orderBy('id' )
-        ->get();
+        $books = Book::with(['category', 'authors','rating'])
+            ->withAvg('rating as rating', 'ratings.rate')
+            ->search($filters)            
+            ->paginate(10);
 
-        /** Using resource */
-        return ResponseHelper::success(' جميع الكتب', BookResource::collection($books));
+        // return $books;
+        /** Using resource-collection */
+        return apiSuccess(' جميع الكتب',  new BookCollection($books));
     }
-
-
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreBookRequest $request)
+    public function store(BookRequest $request)
     {
-        //  return $request->all();
-        $book = Book::create($request->all());
+        $validated = $request->validated();
 
-        if ($request->hasFile('cover')){
+        if ($request->hasFile('cover')) {
             $file = $request->file('cover');
             $filename = "$request->ISBN." . $file->extension();
-            Storage::putFileAs('book-images', $file ,$filename );
-            $book->cover = $filename;
-            $book->save();
+            Storage::putFileAs('book-images', $file, $filename);
+            $validated['cover'] = $filename;
         }
-        return ResponseHelper::success("تمت إضافة الكتاب", $book);
+        $book = Book::create($validated);
+
+        // ربط المؤلفين بالكتاب
+        $book->authors()->attach($validated['authors'] ?? []);
+
+        // تحميل العلاقات لإرجاعها في الاستجابة
+        $book->load(['category', 'authors']);
+
+        return apiSuccess("تمت إضافة الكتاب", $book);
     }
 
     /**
@@ -76,20 +61,37 @@ class BookController extends Controller
      */
     public function show(Book $book)
     {
-        $book = $book->load(['authors:name', 'category']);
+        $book = $book->load(['authors', 'category']);
 
-        return ResponseHelper::success("تم إعادة الكتاب بنجاح", new BookResource($book));
+        return apiSuccess("تم إعادة الكتاب بنجاح", new BookResource($book));
     }
 
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBookRequest $request, Book $book)
+    public function update(BookRequest $request, Book $book)
     {
-        $book->update($request->all());
-        return ResponseHelper::success("تمت تعديل الكتاب", $book);
+        $validated = $request->validated();
 
+        if ($request->hasFile('cover')) {
+            $file = $request->file('cover');
+            $filename = "$request->ISBN." . $file->extension();
+            if ($book->cover) {
+                Storage::delete("book-images/$book->cover");
+            }
+
+            Storage::putFileAs('book-images', $file, $filename);
+            $validated['cover'] = $filename;
+        }
+        $book->update($validated);
+
+
+        $book->authors()->sync($validated['authors'] ?? []);
+
+        $book->load(['category', 'authors']);
+
+        return apiSuccess("تمت تعديل الكتاب", $book);
     }
 
     /**
@@ -97,7 +99,10 @@ class BookController extends Controller
      */
     public function destroy(Book $book)
     {
+        if ($book->cover) {
+            Storage::delete("book-images/$book->cover");
+        }
         $book->delete();
-        return ResponseHelper::success("تمت حذف الكتاب", $book);
+        return apiSuccess("تم حذف الكتاب");
     }
 }

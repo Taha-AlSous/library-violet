@@ -1,12 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\ResponseHelper;
 use App\Models\Author;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AuthorController extends Controller
 {
@@ -15,51 +13,53 @@ class AuthorController extends Controller
      */
     public function index()
     {
-        $authors =  Author::all();
-        return ResponseHelper::success(' جميع المؤلفين', $authors);
+        $authors = Author::all();
+        return apiSuccess('جميع المؤلفين', $authors);
     }
-
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $request->validate([
-            'name' => 'required|max:50|unique:authors'
+            'name' => 'required|max:70',
+            'birth_date' => 'nullable|date',
+            'country' => 'nullable|string|max:100'
         ]);
+
         $author = new Author();
         $author->name = $request->name;
         $author->save();
-        return ResponseHelper::success("تمت إضافة المؤلف", $author);
+
+        return apiSuccess("تمت إضافة المؤلف", $author);
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id) {}
-
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Author $author)
     {
         $request->validate([
-            'name' => "required|max:50|unique:authors,name,$id"
+            'name' => "required|max:70",
+            'birth_date' => 'nullable|date|before:today',
+            'country' => 'nullable|string|max:100'
         ]);
 
-        $author = Author::find($id);
         $author->name = $request->name;
         $author->save();
-        return ResponseHelper::success("تم تعديل اسم المؤلف", $author);
+
+        return apiSuccess("تم تعديل المؤلف", $author);
     }
+
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Author $author)
     {
-        $author = Author::find($id);
+
         $author->delete();
-        return ResponseHelper::success("تم حذف المؤلف", $author);
+
+        return apiSuccess("تم حذف المؤلف");
     }
 }

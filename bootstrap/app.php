@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\UserType;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,9 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // global middleware
-        // $middleware->append(App\Http\Middleware\LangMiddleware::class);
+        $middleware->statefulApi();
+        $middleware->alias(['user-type' => UserType::class]);
 
-        
+        //execlude lang from encryption
+        $middleware->encryptCookies(['lang']);
+
         // middleware for "api" routes
         $middleware->appendToGroup('api', App\Http\Middleware\LangMiddleware::class);
     })
